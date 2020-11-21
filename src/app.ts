@@ -1,52 +1,33 @@
+import * as dotenv from "dotenv";
 import express from "express";
-import {Request, Response} from "express";
-import {createConnection} from "typeorm";
-import {User} from "./entity/User";
+import cors from "cors";
+import helmet from "helmet";
+import { createConnection } from "typeorm";
+import { userRouter } from "./routes/userRouter"
 
-// create typeorm connection
-createConnection().then(connection => {
-    console.log("connected");
-    
-    const userRepository = connection.getRepository(User);
+dotenv.config();
 
-    // create and setup express app
-    const app = express();
-    app.use(express.json());
+if (!process.env.PORT) {
+    process.exit(1);
+}
 
-    // register routes
+const PORT: number = parseInt(process.env.PORT as string, 10);
+const app = express();
 
-    app.get("/users", async function(req: Request, res: Response) {
-        const users = await userRepository.find();
-        res.json(users);
-    });
+/**
+*  App Configuration
+*/
 
-    app.get("/users/:id", async function(req: Request, res: Response) {
-        const results = await userRepository.findOne(req.params.id);
-        return res.send(results);
-    });
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+app.use("/user", userRouter);
 
-    app.post("/users", async function(req: Request, res: Response) {
-        const user = await userRepository.create(req.body);
-        const results = await userRepository.save(user);
-        return res.send(results);
-    });
+/**
+ * Server Activation
+ */
 
-    app.put("/users/:id", async function(req: Request, res: Response) {
-        const user = await userRepository.findOne(req.params.id);
-        let results;
-
-        if (user !== undefined) {
-            userRepository.merge(user, req.body);
-            results = await userRepository.save(user);
-        }
-        return res.send(results);
-    });
-
-    app.delete("/users/:id", async function(req: Request, res: Response) {
-        const results = await userRepository.delete(req.params.id);
-        return res.send(results);
-    });
-
-    // start express server
-    app.listen(3000);
-}).catch(error => {console.log(error);});
+const server = app.listen(PORT, () => {
+    createConnection();
+    console.log(`Listening on port ${PORT}`);
+});

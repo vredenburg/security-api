@@ -3,7 +3,7 @@ import { User } from "../entity/User"
 
 class UserController {
 
-    static find = async (id: number): Promise<User> => {
+    static find = async (id: string): Promise<User> => {
         const userRepository = getRepository(User);
         const user: User = await userRepository.findOneOrFail(id);
 
@@ -13,7 +13,8 @@ class UserController {
     static create = async (newUser: User): Promise<void> => {
         const userRepository = getRepository(User);
 
-        userRepository.save(newUser);
+        const user: User = userRepository.create(newUser);
+        userRepository.save(user);
         console.info("Created new user: " + newUser.firstName + " " + newUser.lastName);
     };
 
@@ -25,7 +26,7 @@ class UserController {
         console.info("Updated user: " + updatedUser);
     };
 
-    static delete = async (id: number): Promise<void> => {
+    static delete = async (id: string): Promise<void> => {
         const userRepository = getRepository(User);
 
         const user: User = await UserController.find(id);

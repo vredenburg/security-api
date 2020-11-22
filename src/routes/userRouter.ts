@@ -1,7 +1,3 @@
-/**
- * Required External Modules and Interfaces
- */
-
 import express, { Request, Response } from "express";
 import { check, validationResult } from "express-validator";
 import UserController from "../controller/UserController";
@@ -10,11 +6,11 @@ import { User } from "../entity/User";
 export const userRouter = express.Router();
 
 /**
- * GET user/:id
+ * GET api/user/:id
  */
 userRouter.get("/:id",
     [
-        check('id').isInt()
+        check('id').isUUID()
     ],
     async (req: Request, res: Response) => {
         const errors = validationResult(req);
@@ -23,8 +19,7 @@ userRouter.get("/:id",
         }
 
         try {
-            const id: number = parseInt(req.params.id, 10);
-            const user: User = await UserController.find(id);
+            const user: User = await UserController.find(req.params.id);
 
             res.status(200).send(user);
         } catch (e) {
@@ -33,10 +28,12 @@ userRouter.get("/:id",
     });
 
 /**
- * POST user/
+ * POST api/user/
  */
 userRouter.post("/",
     [
+        check('user.email').normalizeEmail().isEmail(),
+        check('user.password').notEmpty(),
         check('user.firstName').notEmpty(),
         check('user.lastName').notEmpty()
     ],
@@ -57,11 +54,11 @@ userRouter.post("/",
     });
 
 /**
- * PUT user/
+ * PUT api/user/
  */
 userRouter.put("/",
     [
-        check('user.id').isInt().not().isString(),
+        check('user.id').isUUID(),
         check('user.firstName').notEmpty(),
         check('user.lastName').notEmpty()
     ],
@@ -85,7 +82,7 @@ userRouter.put("/",
  */
 userRouter.delete("/:id",
     [
-        check('id').isInt()
+        check('id').isUUID()
     ],
     async (req: Request, res: Response) => {
         const errors = validationResult(req);
@@ -94,8 +91,7 @@ userRouter.delete("/:id",
         }
 
         try {
-            const id: number = parseInt(req.params.id, 10);
-            await UserController.delete(id);
+            await UserController.delete(req.params.id);
 
             return res.sendStatus(200);
         } catch (e) {

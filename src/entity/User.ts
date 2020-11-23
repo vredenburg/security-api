@@ -10,7 +10,7 @@ export class User extends BaseEntity {
     email!: string;
 
     @Column("varchar", { name: "password" })
-    password?: string;
+    password!: string;
 
     @Column("varchar", { name: "first_name" })
     firstName!: string;

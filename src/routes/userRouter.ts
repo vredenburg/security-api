@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import { check, validationResult } from "express-validator";
 import UserController from "../controller/UserController";
 import { User } from "../entity/User";
+import { checkJwt } from "../middleware/checkJwt";
 
 export const userRouter = express.Router();
 
@@ -10,7 +11,8 @@ export const userRouter = express.Router();
  */
 userRouter.get("/:id",
     [
-        check('id').isUUID()
+        check('id').isUUID(),
+        checkJwt
     ],
     async (req: Request, res: Response) => {
         const errors = validationResult(req);
@@ -33,14 +35,13 @@ userRouter.get("/:id",
 userRouter.post("/",
     [
         check('user.email').normalizeEmail().isEmail(),
-        check('user.password').notEmpty(),
-        check('user.firstName').notEmpty(),
-        check('user.lastName').notEmpty()
+        check(['user.password', 'user.firstName', 'user.lastName']).notEmpty(),
+        check('user.role').not().exists(),
+        checkJwt
     ],
     async (req: Request, res: Response) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            console.log(errors);
             return res.status(422).json({ errors: errors.array() });
         }
 
@@ -59,9 +60,9 @@ userRouter.post("/",
 userRouter.put("/",
     [
         check('user.id').isUUID(),
-        check('user.email').not().exists(),
-        check('user.firstName').notEmpty(),
-        check('user.lastName').notEmpty()
+        check(['user.firstName', 'user.lastName']).isString(),
+        check(['user.email', 'user.password', 'user.role', 'user.createdOn', 'user.updatedOn']).not().exists(),
+        checkJwt
     ],
     async (req: Request, res: Response) => {
         const errors = validationResult(req);
@@ -83,7 +84,8 @@ userRouter.put("/",
  */
 userRouter.delete("/:id",
     [
-        check('id').isUUID()
+        check('id').isUUID(),
+        checkJwt
     ],
     async (req: Request, res: Response) => {
         const errors = validationResult(req);

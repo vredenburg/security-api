@@ -4,10 +4,15 @@ import cors from "cors";
 import helmet from "helmet";
 import { createConnection } from "typeorm";
 import { userRouter } from "./routes/userRouter"
+import { authRouter } from "./routes/authRouter";
+
+/**
+*  App variables
+*/
 
 dotenv.config();
-
-if (!process.env.PORT) {
+if (!process.env.PORT || !process.env.JWT_SECRET_KEY) {
+    console.error("FATAL ERROR: missing env variables.")
     process.exit(1);
 }
 
@@ -22,6 +27,7 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use("/api/user", userRouter);
+app.use("/api", authRouter);
 
 /**
  * Server Activation

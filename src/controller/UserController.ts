@@ -1,9 +1,9 @@
 import { getRepository } from "typeorm";
 import bcrypt from "bcrypt";
 import { User } from "../entity/User"
+import { Role } from "../common/enums";
 
 class UserController {
-    private SALT_ROUNDS: number = 10;
 
     static find = async (id: string): Promise<User> => {
         return new Promise(async (resolve, reject) => {
@@ -21,13 +21,33 @@ class UserController {
 
     };
 
-    static findByEmail = async (email: string): Promise<User | undefined> => {
+    static findIdAndPasswordByEmail = async (email: string): Promise<User> => {
         return new Promise(async (resolve, reject) => {
             const userRepository = getRepository(User);
-            let user: User | undefined;
+            let user: User;
 
             try {
                 user = await userRepository
+                    .createQueryBuilder('user')
+                    .select('user.id')
+                    .addSelect('user.password')
+                    .where('user.email = :email', { email: email })
+                    .getOneOrFail();
+            } catch (error) {
+                return reject(error);
+            }
+
+            return resolve(user);
+        });
+    }
+
+    static exists = (email: string): Promise<boolean> => {
+        return new Promise(async (resolve, reject) => {
+            const userRepository = getRepository(User);
+            let count: User | undefined;
+
+            try {
+                count = await userRepository
                     .createQueryBuilder('user')
                     .where('user.email = :email', { email: email })
                     .getOne();
@@ -35,31 +55,29 @@ class UserController {
                 return reject(error);
             }
 
-            resolve(user);
-        })
-    };
+            resolve(count !== undefined);
+        });
+    }
 
     static create = async (newUser: User): Promise<void> => {
         return new Promise(async (resolve, reject) => {
             const userRepository = getRepository(User);
 
-            // check if email already exists
-            UserController.findByEmail(newUser.email).then(result => {
-                if (result !== undefined) {
-                    return reject(new Error("Email " + newUser.email + " is already in use."));
-                } else {
-                    bcrypt.hash(newUser.password, 10).then(hash => {
-                        console.log(hash);
-                        newUser.password = hash.toString();
-                        userRepository.save(newUser);
-                    });
+            if (await UserController.exists(newUser.email)) {
+                return reject(new Error("Email " + newUser.email + " is already in use."));
+            } else {
+                bcrypt.hash(newUser.password, 10).then(hash => {
+                    newUser.password = hash.toString();
+                    newUser.role = Role.Member;
+                    userRepository.save(newUser);
+                });
 
-                    console.info("Created new user: " + newUser.firstName + " " + newUser.lastName);
-                    resolve();
-                }
-            });
-        })
-    };
+                console.info("Created new user: " + newUser.firstName + " " + newUser.lastName);
+                resolve();
+            }
+        });
+    }
+
 
     static update = async (updatedUser: User): Promise<void> => {
         return new Promise(async (resolve, reject) => {

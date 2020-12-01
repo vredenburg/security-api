@@ -3,6 +3,8 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { createConnection } from "typeorm";
+import expressWinston from "express-winston";
+import { LoggingFactory } from "./common/LoggingFactory"
 import { userRouter } from "./routes/userRouter"
 import { authRouter } from "./routes/authRouter";
 
@@ -23,11 +25,15 @@ const app = express();
 *  App Configuration
 */
 
+app.use(LoggingFactory.getWinstonLogger);
+
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use("/api/user", userRouter);
 app.use("/api", authRouter);
+
+app.use(LoggingFactory.getWinstonErrorLogger);
 
 /**
  * Server Activation

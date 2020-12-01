@@ -1,4 +1,4 @@
-import { createLogger, format, Logger, transports } from 'winston';
+import { format, transports } from 'winston';
 import expressWinston from "express-winston";
 import { ErrorRequestHandler, Handler } from 'express';
 

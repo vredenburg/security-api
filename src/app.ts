@@ -3,7 +3,6 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { createConnection } from "typeorm";
-import expressWinston from "express-winston";
 import { LoggingFactory } from "./common/LoggingFactory"
 import { userRouter } from "./routes/userRouter"
 import { authRouter } from "./routes/authRouter";

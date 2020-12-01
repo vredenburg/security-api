@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import { check, validationResult } from "express-validator";
-import UserController from "../controller/UserController";
+import { UserController } from "../controller/UserController";
 import { User } from "../entity/User";
 import { checkJwt } from "../middleware/checkJwt";
 

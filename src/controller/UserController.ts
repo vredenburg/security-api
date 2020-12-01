@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import { User } from "../entity/User"
 import { Role } from "../common/enums";
 
-class UserController {
+export class UserController {
 
     static find = async (id: string): Promise<User> => {
         return new Promise(async (resolve, reject) => {
@@ -119,5 +119,3 @@ class UserController {
         });
     };
 }
-
-export default UserController;

@@ -2,9 +2,9 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
-import UserController from "./UserController";
+import { UserController } from "./UserController";
 
-class AuthController {
+export class AuthController {
 
     static login = (email: string, password: string): Promise<string> => {
         return new Promise(async (resolve, reject) => {
@@ -30,4 +30,3 @@ class AuthController {
 
 }
 
-export default AuthController;

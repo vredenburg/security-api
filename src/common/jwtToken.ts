@@ -1,4 +1,4 @@
 export interface jwtToken {
-    userId: string,
-    iat: number
+	userId: string,
+	iat: number
 }

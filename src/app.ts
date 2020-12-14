@@ -7,40 +7,40 @@ import { UserController } from "./controller/UserController";
 import { AuthController } from "./controller/AuthController";
 
 export class App {
-    public app: express.Application;
-    public port: number;
+	public app: express.Application;
+	public port: number;
 
-    constructor(port: number) {
-        this.app = express();
-        this.port = port
+	constructor(port: number) {
+		this.app = express();
+		this.port = port
 
-        this.initialiseMiddlewares();
+		this.initialiseMiddlewares();
 
-        // Wait for databse connection to establish before initialising controllers
-        createConnection().then(() => {
+		// Wait for databse connection to establish before initialising controllers
+		createConnection().then(() => {
 
-            this.initialiseControllers();
-        })
-    }
+			this.initialiseControllers();
+		})
+	}
 
-    private initialiseMiddlewares(): void {
-        this.app.use(helmet());
-        this.app.use(cors());
-        this.app.use(express.json());
-        this.app.use(LoggingFactory.getWinstonLogger);
-    }
+	private initialiseMiddlewares(): void {
+		this.app.use(helmet());
+		this.app.use(cors());
+		this.app.use(express.json());
+		this.app.use(LoggingFactory.getWinstonLogger);
+	}
 
-    private initialiseControllers(): void {
-        this.app.use('/api', new UserController().router);
-        this.app.use("/api", new AuthController().router);
+	private initialiseControllers(): void {
+		this.app.use('/api', new UserController().router);
+		this.app.use("/api", new AuthController().router);
 
-        // Error logging MUST only be added after initialising routes
-        this.app.use(LoggingFactory.getWinstonErrorLogger);
-    }
+		// Error logging MUST only be added after initialising routes
+		this.app.use(LoggingFactory.getWinstonErrorLogger);
+	}
 
-    public run(): void {
-        this.app.listen(this.port, () => {
-            console.log(`Listening on port ${this.port}`);
-        });
-    }
+	public run(): void {
+		this.app.listen(this.port, () => {
+			console.log(`Listening on port ${this.port}`);
+		});
+	}
 }

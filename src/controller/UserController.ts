@@ -5,7 +5,7 @@ import { User } from "../model/User";
 import { checkJwt } from "../middleware/checkJwt";
 
 export class UserController {
-    public path: string = "/user";
+    public path = "/user";
     public router: Router = Router();
 
     private userService: UserService;
@@ -15,8 +15,7 @@ export class UserController {
         this.intialiseRoutes();
     }
 
-    private intialiseRoutes() {
-
+    private intialiseRoutes() : void {
         /**
         * GET api/user/:id
         */
@@ -63,7 +62,6 @@ export class UserController {
     }
 
     private getUser = async (request: Request, response: Response) => {
-
         const errors = validationResult(request);
         if (!errors.isEmpty()) {
             return response.status(422).json({ errors: errors.array() });
@@ -76,7 +74,6 @@ export class UserController {
         } catch (error) {
             response.status(404).send(error.message);
         }
-
     }
 
     private createUser = async (request: Request, response: Response) => {

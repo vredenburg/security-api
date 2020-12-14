@@ -15,10 +15,10 @@ export class AuthController {
 
     constructor() {
         this.userService = new UserService();
-        this.intializeRoutes();
+        this.intialiseRoutes();
     }
 
-    public intializeRoutes() {
+    private intialiseRoutes() : void{
         this.router.post(this.path + "/login",
             [
                 check('email').normalizeEmail().isEmail(),
@@ -51,6 +51,5 @@ export class AuthController {
         }
 
         return response.status(200).send(accessToken);
-
     }
 }

@@ -44,7 +44,7 @@ export class AuthController {
 			} else {
 				const JWT_SECRET_KEY: Buffer = fs.readFileSync(path.resolve(__dirname, "../../jwtSecretKey.pem"));
 				const userId: string = user.id;
-				accessToken = jwt.sign({ userId }, JWT_SECRET_KEY, { algorithm: 'RS256' });
+				accessToken = jwt.sign({ userId }, JWT_SECRET_KEY, { algorithm: 'RS256', expiresIn: '60000' });
 			}
 		} catch (error) {
 			return response.status(401).json({ error: error });

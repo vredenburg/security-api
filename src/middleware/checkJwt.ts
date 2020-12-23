@@ -21,6 +21,7 @@ export const checkJwt = (request: Request, response: Response, next: NextFunctio
 		if (reqId && reqId !== userId) {
 			return response.status(401).json({ error: { name: "InvalidToken", message: "Provided jwt token is not valid for this user." } });
 		} else {
+			request.params.role = decodedToken.role;
 			next();
 		}
 	} catch (error) {

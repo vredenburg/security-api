@@ -3,9 +3,10 @@ import { check, validationResult } from "express-validator";
 import { UserService } from "../service/UserService";
 import { User } from "../model/User";
 import { checkJwt } from "../middleware/checkJwt";
+import { requireAdmin } from "../middleware/requireAdmin";
 
 export class UserController {
-	public path = "/user";
+	public path = "/users";
 	public router: Router = Router();
 
 	private userService: UserService;
@@ -17,46 +18,63 @@ export class UserController {
 
 	private intialiseRoutes(): void {
 		/**
-		* GET api/user/:id
+		* GET api/users/:id
 		*/
-		this.router.get(this.path + "/:id",
+		this.router.get(this.path + "/:email",
 			[
-				check('id').isUUID(),
-				checkJwt
+				check('email').isEmail(),
+				checkJwt,
+				requireAdmin
 			],
 			this.getUser);
 
 		/**
-		* POST api/user/
+		* POST api/users
+		* Authorisation: admin
 		*/
 		this.router.post(this.path,
 			[
 				check('user.email').normalizeEmail().isEmail(),
 				check(['user.password', 'user.firstName', 'user.lastName']).notEmpty(),
 				check(['user.role', 'user.createdOn', 'user.updatedOn']).not().exists(),
-				checkJwt
+				checkJwt,
+				requireAdmin
 			],
 			this.createUser);
 
 		/**
-		* PUT api/user/:id
+		* POST api/users/:id/password_change
 		*/
-		this.router.put(this.path,
+		this.router.post(this.path + "/:id" + "/password_change",
 			[
-				check('user.id').isUUID(),
+				check(['old', 'new']).notEmpty(),
+				checkJwt
+			],
+			this.updateUserPassword);
+
+		/**
+		* PUT api/users/:id
+		* Authorisation: admin
+		*/
+		this.router.put(this.path + "/:id",
+			[
+				check('id').isUUID(),
 				check(['user.firstName', 'user.lastName']).isString(),
 				check(['user.email', 'user.password', 'user.role', 'user.createdOn', 'user.updatedOn']).not().exists(),
-				checkJwt
+				checkJwt,
+				requireAdmin
 			],
 			this.updateUser);
 
 		/**
-		* DELETE api/user/:id
+		* DELETE api/users/:id
+		* Authorisation: admin
 		*/
 		this.router.delete(this.path + "/:id",
 			[
 				check('id').isUUID(),
-				checkJwt
+				checkJwt,
+				requireAdmin
 			],
 			this.deleteUser);
 	}
@@ -68,7 +86,7 @@ export class UserController {
 		}
 
 		try {
-			const user: User = await this.userService.find(request.params.id);
+			const user: User = await this.userService.findByEmail(request.params.email);
 
 			response.status(200).send(user);
 		} catch (error) {
@@ -98,11 +116,26 @@ export class UserController {
 		}
 
 		try {
-			await this.userService.update(request.body.user);
+			await this.userService.update(request.params.id, request.body.user);
 
 			response.sendStatus(200);
 		} catch (error) {
 			response.status(500).send(error.message);
+		}
+	}
+
+	private updateUserPassword = async (request: Request, response: Response) => {
+		const errors = validationResult(request);
+		if (!errors.isEmpty()) {
+			return response.status(422).json({ errors: errors.array() });
+		}
+
+		try {
+			await this.userService.updatePassword(request.params.id, request.body.old, request.body.new);
+
+			response.sendStatus(200);
+		} catch (error) {
+			response.status(409).send(error.message);
 		}
 	}
 

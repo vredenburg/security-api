@@ -17,16 +17,38 @@ export class UserController {
 	}
 
 	private intialiseRoutes(): void {
+
 		/**
-		* GET api/users/:id
+		* GET api/users/
 		*/
-		this.router.get(this.path + "/:email",
+		this.router.get(this.path,
 			[
-				check('email').isEmail(),
 				checkJwt,
 				requireAdmin
 			],
-			this.getUser);
+			this.listUsers);
+
+		/**
+		* GET api/users/:id
+		*/
+		this.router.get(this.path + "/:id",
+			[
+				check('id').isUUID(),
+				checkJwt,
+				requireAdmin
+			],
+			this.getUserById);
+
+		/**
+		* GET api/users/:email
+		*/
+		this.router.get(this.path + "/:email",
+			[
+				check('email').normalizeEmail().isEmail(),
+				checkJwt,
+				requireAdmin
+			],
+			this.getUserByEmail);
 
 		/**
 		* POST api/users
@@ -34,9 +56,9 @@ export class UserController {
 		*/
 		this.router.post(this.path,
 			[
-				check('user.email').normalizeEmail().isEmail(),
-				check(['user.password', 'user.firstName', 'user.lastName']).notEmpty(),
-				check(['user.role', 'user.createdOn', 'user.updatedOn']).not().exists(),
+				check('email').normalizeEmail().isEmail(),
+				check(['password', 'passwordRepeat', 'firstName', 'lastName']).notEmpty(),
+				check(['createdOn', 'updatedOn']).not().exists(),
 				checkJwt,
 				requireAdmin
 			],
@@ -79,7 +101,37 @@ export class UserController {
 			this.deleteUser);
 	}
 
-	private getUser = async (request: Request, response: Response) => {
+	private listUsers = async (request: Request, response: Response) => {
+		const errors = validationResult(request);
+		if (!errors.isEmpty()) {
+			return response.status(422).json({ errors: errors.array() });
+		}
+
+		try {
+			const users: User[] = await this.userService.listAll();
+
+			response.status(200).json(users);
+		} catch (error) {
+			response.status(404).json({ errors: error.message });
+		}
+	}
+
+	private getUserById = async (request: Request, response: Response) => {
+		const errors = validationResult(request);
+		if (!errors.isEmpty()) {
+			return response.status(422).json({ errors: errors.array() });
+		}
+
+		try {
+			const user: User = await this.userService.findById(request.params.id);
+
+			response.status(200).json(user);
+		} catch (error) {
+			response.status(404).json({ errors: error.message });
+		}
+	}
+
+	private getUserByEmail = async (request: Request, response: Response) => {
 		const errors = validationResult(request);
 		if (!errors.isEmpty()) {
 			return response.status(422).json({ errors: errors.array() });
@@ -88,9 +140,9 @@ export class UserController {
 		try {
 			const user: User = await this.userService.findByEmail(request.params.email);
 
-			response.status(200).send(user);
+			response.status(200).json(user);
 		} catch (error) {
-			response.status(404).send(error.message);
+			response.status(404).json({ errors: error.message });
 		}
 	}
 
@@ -101,11 +153,11 @@ export class UserController {
 		}
 
 		try {
-			await this.userService.create(request.body.user);
+			await this.userService.create(request.body);
 
 			return response.sendStatus(201);
 		} catch (error) {
-			return response.status(409).send(error.message);
+			return response.status(409).json({ errors: error.message });
 		}
 	}
 
@@ -120,7 +172,7 @@ export class UserController {
 
 			response.sendStatus(200);
 		} catch (error) {
-			response.status(500).send(error.message);
+			response.status(500).json({ errors: error.message });
 		}
 	}
 
@@ -135,7 +187,7 @@ export class UserController {
 
 			response.sendStatus(200);
 		} catch (error) {
-			response.status(409).send(error.message);
+			response.status(409).json({ errors: error.message });
 		}
 	}
 
@@ -150,7 +202,7 @@ export class UserController {
 
 			return response.sendStatus(200);
 		} catch (error) {
-			return response.status(404).send(error.message);
+			return response.status(404).json({ errors: error.message });
 		}
 	}
 

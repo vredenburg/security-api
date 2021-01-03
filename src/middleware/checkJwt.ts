@@ -4,7 +4,7 @@ import path from "path";
 import { Request, Response, NextFunction } from "express";
 import { jwtToken } from "../common/jwtToken";
 
-export const checkJwt = (request: Request, response: Response, next: NextFunction) => {
+export const checkJwt = (request: Request, response: Response, next: NextFunction): undefined | Response => {
 	const authHeader: string | undefined = request.headers['authorization'];
 	if (authHeader === undefined) {
 		return response.status(401).json({ error: "No Authorization header provided." });
@@ -15,15 +15,10 @@ export const checkJwt = (request: Request, response: Response, next: NextFunctio
 
 	try {
 		const decodedToken: jwtToken = jwt.verify(token, JWT_SECRET_KEY, { algorithms: ['RS256'] }) as jwtToken;
-		const userId: string = decodedToken.userId;
-		const reqId: string = (request.body.user === undefined) ? request.body.id : request.body.user.id;
-
-		if (reqId && reqId !== userId) {
-			return response.status(401).json({ error: { name: "InvalidToken", message: "Provided jwt token is not valid for this user." } });
-		} else {
-			request.params.role = decodedToken.role;
-			next();
-		}
+		console.log("TOKEN: " + decodedToken.role);
+		request.params.tokenId = decodedToken.userId
+		request.params.tokenRole = decodedToken.role;
+		next();
 	} catch (error) {
 		return response.status(401).send(error);
 	}

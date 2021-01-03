@@ -14,7 +14,8 @@ export class UserService {
 	// CREATE
 	// ------------------------------------------------------------------------------------------------
 
-	public create = async (newUser: User): Promise<void> => {
+	public create = async (newUser: User): Promise<User> => {
+		let user: User;
 		try {
 			if (await this.emailExists(newUser.email)) {
 				return Promise.reject(new Error("Email " + newUser.email + " is already in use."));
@@ -25,18 +26,30 @@ export class UserService {
 				newUser.role = Role.Member;
 			});
 
-			await this.userRepository.save(newUser);
+			user = await this.userRepository.save(newUser);
 		} catch (error) {
 			return Promise.reject(error);
 		}
 
-		return Promise.resolve();
+		return Promise.resolve(user);
 	}
 
 
 	// ------------------------------------------------------------------------------------------------
 	// READ
 	// ------------------------------------------------------------------------------------------------
+
+	public listAll = async (): Promise<User[]> => {
+		let user: User[] | undefined;
+
+		try {
+			user = await this.userRepository.find();
+		} catch (error) {
+			return Promise.reject(error);
+		}
+
+		return Promise.resolve(user);
+	};
 
 	public findById = async (id: string): Promise<User> => {
 		let user: User | undefined;

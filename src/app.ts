@@ -1,44 +1,46 @@
-import * as dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { createConnection } from "typeorm";
 import { LoggingFactory } from "./common/LoggingFactory"
-import { userRouter } from "./routes/userRouter"
-import { authRouter } from "./routes/authRouter";
+import { UserController } from "./controller/UserController";
+import { AuthController } from "./controller/AuthController";
 
-/**
-*  App variables
-*/
+export class App {
+	public app: express.Application;
+	public port: number;
 
-dotenv.config();
-if (!process.env.PORT || !process.env.JWT_SECRET_KEY) {
-    console.error("FATAL ERROR: missing env variables.")
-    process.exit(1);
+	constructor(port: number) {
+		this.app = express();
+		this.port = port
+
+		this.initialiseMiddlewares();
+
+		// Wait for databse connection to establish before initialising controllers
+		createConnection().then(() => {
+
+			this.initialiseControllers();
+		})
+	}
+
+	private initialiseMiddlewares(): void {
+		this.app.use(helmet());
+		this.app.use(cors());
+		this.app.use(express.json());
+		this.app.use(LoggingFactory.getWinstonLogger);
+	}
+
+	private initialiseControllers(): void {
+		this.app.use('/api', new UserController().router);
+		this.app.use("/api", new AuthController().router);
+
+		// Error logging MUST only be added after initialising routes
+		this.app.use(LoggingFactory.getWinstonErrorLogger);
+	}
+
+	public run(): void {
+		this.app.listen(this.port, () => {
+			console.log(`Listening on port ${this.port}`);
+		});
+	}
 }
-
-const PORT: number = parseInt(process.env.PORT as string, 10);
-const app = express();
-
-/**
-*  App Configuration
-*/
-
-app.use(LoggingFactory.getWinstonLogger);
-
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
-app.use("/api/user", userRouter);
-app.use("/api", authRouter);
-
-app.use(LoggingFactory.getWinstonErrorLogger);
-
-/**
- * Server Activation
- */
-
-const server = app.listen(PORT, () => {
-    createConnection();
-    console.log(`Listening on port ${PORT}`);
-});

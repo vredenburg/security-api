@@ -1,21 +1,21 @@
 {
-    "type": "postgres",
-    "host": "localhost",
-    "port": 5432,
-    "username": "security",
-    "password": "security",
-    "database": "security_api",
-    "logging": true,
-    "synchronize": false,
-    "entities": [
-      "dist/entity/**/*.js",
-      "src/entity/**/*.ts"
-   ],
-   "migrations": [
-      "src/db/migrations/**/*.ts"
-   ],
-   "subscribers": [
-      "dist/subscriber/**/*.js",
-      "src/subscriber/**/*.ts"
-   ]
-  }
+	"type": "postgres",
+	"host": "localhost",
+	"port": 5432,
+	"username": "security",
+	"password": "security",
+	"database": "security_api",
+	"logging": true,
+	"synchronize": false,
+	"entities": [
+		"dist/model/**/*.js",
+		"src/model/**/*.ts"
+	],
+	"migrations": [
+		"src/db/migrations/**/*.ts"
+	],
+	"subscribers": [
+		"dist/subscriber/**/*.js",
+		"src/subscriber/**/*.ts"
+	]
+}

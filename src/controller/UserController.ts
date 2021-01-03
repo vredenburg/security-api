@@ -1,121 +1,209 @@
-import { getRepository } from "typeorm";
-import bcrypt from "bcrypt";
-import { User } from "../entity/User"
-import { Role } from "../common/enums";
+import { Request, Response, Router } from "express";
+import { check, validationResult } from "express-validator";
+import { UserService } from "../service/UserService";
+import { User } from "../model/User";
+import { checkJwt } from "../middleware/checkJwt";
+import { requireAdmin } from "../middleware/requireAdmin";
 
 export class UserController {
+	public path = "/users";
+	public router: Router = Router();
 
-    static find = async (id: string): Promise<User> => {
-        return new Promise(async (resolve, reject) => {
-            const userRepository = getRepository(User);
-            let user: User;
+	private userService: UserService;
 
-            try {
-                user = await userRepository.findOneOrFail(id);
-            } catch (error) {
-                return reject(error);
-            }
+	constructor() {
+		this.userService = new UserService();
+		this.intialiseRoutes();
+	}
 
-            return resolve(user);
-        });
+	private intialiseRoutes(): void {
 
-    };
+		/**
+		* GET api/users/
+		*/
+		this.router.get(this.path,
+			[
+				checkJwt,
+				requireAdmin
+			],
+			this.listUsers);
 
-    static findIdAndPasswordByEmail = async (email: string): Promise<User> => {
-        return new Promise(async (resolve, reject) => {
-            const userRepository = getRepository(User);
-            let user: User;
+		/**
+		* GET api/users/:id
+		*/
+		this.router.get(this.path + "/:id",
+			[
+				check('id').isUUID(),
+				checkJwt,
+				requireAdmin
+			],
+			this.getUserById);
 
-            try {
-                user = await userRepository
-                    .createQueryBuilder('user')
-                    .select('user.id')
-                    .addSelect('user.password')
-                    .where('user.email = :email', { email: email })
-                    .getOneOrFail();
-            } catch (error) {
-                return reject(error);
-            }
+		/**
+		* GET api/users/:email
+		*/
+		this.router.get(this.path + "/:email",
+			[
+				check('email').normalizeEmail().isEmail(),
+				checkJwt,
+				requireAdmin
+			],
+			this.getUserByEmail);
 
-            return resolve(user);
-        });
-    }
+		/**
+		* POST api/users
+		* Authorisation: admin
+		*/
+		this.router.post(this.path,
+			[
+				check('email').normalizeEmail().isEmail(),
+				check(['password', 'passwordRepeat', 'firstName', 'lastName']).notEmpty(),
+				check(['createdOn', 'updatedOn']).not().exists(),
+				checkJwt,
+				requireAdmin
+			],
+			this.createUser);
 
-    static exists = (email: string): Promise<boolean> => {
-        return new Promise(async (resolve, reject) => {
-            const userRepository = getRepository(User);
-            let count: User | undefined;
+		/**
+		* POST api/users/:id/password_change
+		*/
+		this.router.post(this.path + "/:id" + "/password_change",
+			[
+				check(['old', 'new']).notEmpty(),
+				checkJwt
+			],
+			this.updateUserPassword);
 
-            try {
-                count = await userRepository
-                    .createQueryBuilder('user')
-                    .where('user.email = :email', { email: email })
-                    .getOne();
-            } catch (error) {
-                return reject(error);
-            }
+		/**
+		* PUT api/users/:id
+		* Authorisation: admin
+		*/
+		this.router.put(this.path + "/:id",
+			[
+				check('id').isUUID(),
+				check(['user.firstName', 'user.lastName']).isString(),
+				check(['user.email', 'user.password', 'user.role', 'user.createdOn', 'user.updatedOn']).not().exists(),
+				checkJwt,
+				requireAdmin
+			],
+			this.updateUser);
 
-            resolve(count !== undefined);
-        });
-    }
+		/**
+		* DELETE api/users/:id
+		* Authorisation: admin
+		*/
+		this.router.delete(this.path + "/:id",
+			[
+				check('id').isUUID(),
+				checkJwt,
+				requireAdmin
+			],
+			this.deleteUser);
+	}
 
-    static create = async (newUser: User): Promise<void> => {
-        return new Promise(async (resolve, reject) => {
-            const userRepository = getRepository(User);
+	private listUsers = async (request: Request, response: Response) => {
+		const errors = validationResult(request);
+		if (!errors.isEmpty()) {
+			return response.status(422).json({ errors: errors.array() });
+		}
 
-            if (await UserController.exists(newUser.email)) {
-                return reject(new Error("Email " + newUser.email + " is already in use."));
-            } else {
-                bcrypt.hash(newUser.password, 10).then(hash => {
-                    newUser.password = hash.toString();
-                    newUser.role = Role.Member;
-                    userRepository.save(newUser);
-                });
+		try {
+			const users: User[] = await this.userService.listAll();
 
-                console.info("Created new user: " + newUser.firstName + " " + newUser.lastName);
-                resolve();
-            }
-        });
-    }
+			response.status(200).json(users);
+		} catch (error) {
+			response.status(404).json({ errors: error.message });
+		}
+	}
 
+	private getUserById = async (request: Request, response: Response) => {
+		const errors = validationResult(request);
+		if (!errors.isEmpty()) {
+			return response.status(422).json({ errors: errors.array() });
+		}
 
-    static update = async (updatedUser: User): Promise<void> => {
-        return new Promise(async (resolve, reject) => {
-            const userRepository = getRepository(User);
+		try {
+			const user: User = await this.userService.findById(request.params.id);
 
-            await UserController.find(updatedUser.id)
-                .catch(error => {
-                    return reject(error);
-                });
-            userRepository
-                .createQueryBuilder()
-                .update('user')
-                .set({
-                    firstName: updatedUser.firstName,
-                    lastName: updatedUser.lastName
-                })
-                .where('id = :id', { id: updatedUser.id })
-                .execute();
-            console.info("Updated user: " + updatedUser);
-            resolve();
-        });
+			response.status(200).json(user);
+		} catch (error) {
+			response.status(404).json({ errors: error.message });
+		}
+	}
 
-    };
+	private getUserByEmail = async (request: Request, response: Response) => {
+		const errors = validationResult(request);
+		if (!errors.isEmpty()) {
+			return response.status(422).json({ errors: errors.array() });
+		}
 
-    static delete = async (id: string): Promise<void> => {
-        return new Promise(async (resolve, reject) => {
-            const userRepository = getRepository(User);
-            let user: User;
+		try {
+			const user: User = await this.userService.findByEmail(request.params.email);
 
-            try {
-                user = await UserController.find(id)
-            } catch (error) {
-                return reject(error);
-            }
+			response.status(200).json(user);
+		} catch (error) {
+			response.status(404).json({ errors: error.message });
+		}
+	}
 
-            userRepository.delete(id);
-            console.info("Deleted user: " + user);
-            resolve();
-        });
-    };
+	private createUser = async (request: Request, response: Response) => {
+		const errors = validationResult(request);
+		if (!errors.isEmpty()) {
+			return response.status(422).json({ errors: errors.array() });
+		}
+
+		try {
+			await this.userService.create(request.body);
+
+			return response.sendStatus(201);
+		} catch (error) {
+			return response.status(409).json({ errors: error.message });
+		}
+	}
+
+	private updateUser = async (request: Request, response: Response) => {
+		const errors = validationResult(request);
+		if (!errors.isEmpty()) {
+			return response.status(422).json({ errors: errors.array() });
+		}
+
+		try {
+			await this.userService.update(request.params.id, request.body.user);
+
+			response.sendStatus(200);
+		} catch (error) {
+			response.status(500).json({ errors: error.message });
+		}
+	}
+
+	private updateUserPassword = async (request: Request, response: Response) => {
+		const errors = validationResult(request);
+		if (!errors.isEmpty()) {
+			return response.status(422).json({ errors: errors.array() });
+		}
+
+		try {
+			await this.userService.updatePassword(request.params.id, request.body.old, request.body.new);
+
+			response.sendStatus(200);
+		} catch (error) {
+			response.status(409).json({ errors: error.message });
+		}
+	}
+
+	private deleteUser = async (request: Request, response: Response) => {
+		const errors = validationResult(request);
+		if (!errors.isEmpty()) {
+			return response.status(422).json({ errors: errors.array() });
+		}
+
+		try {
+			await this.userService.delete(request.params.id);
+
+			return response.sendStatus(200);
+		} catch (error) {
+			return response.status(404).json({ errors: error.message });
+		}
+	}
+
 }

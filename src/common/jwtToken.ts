@@ -1,4 +1,6 @@
+import { Role } from "./enums";
+
 export interface jwtToken {
-    userId: string,
-    iat: number
+	userId: string,
+	role: Role
 }

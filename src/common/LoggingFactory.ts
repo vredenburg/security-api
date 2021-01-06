@@ -7,7 +7,8 @@ export class LoggingFactory {
 		format: format.combine(
 			format.colorize(),
 			format.timestamp(),
-			format.json()
+			format.json(),
+			format.prettyPrint()
 		),
 		transports: [
 			new transports.Console(),
@@ -20,7 +21,8 @@ export class LoggingFactory {
 		format: format.combine(
 			format.colorize(),
 			format.timestamp(),
-			format.json()
+			format.json(),
+			format.prettyPrint()
 		),
 		transports: [
 			new transports.Console(),

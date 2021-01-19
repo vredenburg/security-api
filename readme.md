@@ -3,11 +3,27 @@
 You will need to have Node.js and Postgres installed.
 
 **Node.js**
-Download from https://nodejs.org/en/. Then update npm to the latest version.
+
+MacOS (homebrew)
+
+```bash
+brew install node
+```
+
+Debian and Ubuntu base Linux distributions
+
+```bash
+curl -sL https://deb.nodesource.com/setup_15.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+Then update npm to the latest version.
 
 ```bash
 npm install npm@latest -g
 ```
+
+For other options refer to: https://nodejs.org/en/
 
 **Postgres**
 
@@ -17,7 +33,7 @@ MacOS (homebrew)
 brew install postgresql
 ```
 
-Linux (apt repository)
+Debian and Ubuntu base Linux distributions
 
 ```bash
 sudo apt-get -y install postgresql

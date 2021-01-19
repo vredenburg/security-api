@@ -3,7 +3,7 @@ import { App } from './app';
 
 dotenv.config();
 
-if (!process.env.PORT || !process.env.JWT_SECRET_KEY) {
+if (!process.env.PORT) {
 	console.error("FATAL ERROR: missing env variables.")
 	process.exit(1);
 }

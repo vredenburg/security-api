@@ -1,26 +1,21 @@
+import fs from "fs";
 import express from "express";
+import https from "https";
 import cors from "cors";
 import helmet from "helmet";
 import { createConnection } from "typeorm";
 import { LoggingFactory } from "./common/LoggingFactory"
 import { UserController } from "./controller/UserController";
 import { AuthController } from "./controller/AuthController";
+import path from "path";
 
 export class App {
-	public app: express.Application;
-	public port: number;
+	private app: express.Application;
+	private port: number;
 
 	constructor(port: number) {
 		this.app = express();
-		this.port = port
-
-		this.initialiseMiddlewares();
-
-		// Wait for databse connection to establish before initialising controllers
-		createConnection().then(() => {
-
-			this.initialiseControllers();
-		})
+		this.port = port;
 	}
 
 	private initialiseMiddlewares(): void {
@@ -38,8 +33,20 @@ export class App {
 		this.app.use(LoggingFactory.getWinstonErrorLogger);
 	}
 
-	public run(): void {
-		this.app.listen(this.port, () => {
+	private createHttpsServer(): https.Server {
+		const key: string = fs.readFileSync(path.resolve(__dirname, "../certs/key-rsa.pem")).toString();
+		const cert: string = fs.readFileSync(path.resolve(__dirname, "../certs/cert.pem")).toString();
+
+		return https.createServer({ key, cert }, this.app);
+	}
+
+	public run = async (): Promise<void> => {
+		this.initialiseMiddlewares();
+		// Wait for database connection to establish before initialising controllers
+		await createConnection();
+		this.initialiseControllers();
+
+		this.createHttpsServer().listen(this.port, () => {
 			console.log(`Listening on port ${this.port}`);
 		});
 	}
